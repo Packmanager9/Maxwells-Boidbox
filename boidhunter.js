@@ -1,4 +1,5 @@
 
+let runspeed = .5
 let max = 0
 window.addEventListener('DOMContentLoaded', (event) => {
     const gamepadAPI = {
@@ -297,8 +298,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
                     }
                 }
             }
-            this.x += this.xmom
-            this.y += this.ymom
+            this.x += this.xmom*runspeed
+            this.y += this.ymom*runspeed
         }
         unmove() {
             if (this.reflect == 1) {
@@ -349,8 +350,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
                     }
                 }
             }
-            this.x += this.xmom
-            this.y += this.ymom
+            this.x += this.xmom*runspeed
+            this.y += this.ymom*runspeed
             this.xmom *= this.friction
             this.ymom *= this.friction
         }
@@ -786,6 +787,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
             if(gooon>0){
                 if(goon.isPointInside(TIP_engine)){
+                    gooon = 0
                     level ++
                     boids = []
                     for (let t = 0; t < 3+(level*3); t++) {
@@ -893,10 +895,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
     let setup_canvas = document.getElementById('canvas') //getting canvas from document
 
-    let together = document.getElementById('col') //getting canvas from document
-
-    let cohesion = document.getElementById('coh') //getting canvas from document
-    let separation = document.getElementById('sep') //getting canvas from document
 
     setUp(setup_canvas, "gray") // setting up canvas refrences, starting timer. 
 
@@ -904,6 +902,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
     let colorer = 0
     class Boid {
         constructor() {
+            this.box = {}
             this.body = new Circle(Math.random() * canvas.width, Math.random() * canvas.height * .9, 3, getRandomColor(), 10 * (Math.random() - .5), Math.random() - .5, .999, 1)
             colorer++
             if (colorer%3 ==  1) {
@@ -918,6 +917,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
             this.awarenessbody = new Circle(this.body.x, this.body.y, 30, "transparent")
             this.awarenessbodysmall = new Circle(this.body.x, this.body.y, 15, "transparent")
             this.sep = 45
+            this.sepsame = 50
             this.coh = 99
             this.tog = 99
             this.dead = 0
@@ -937,8 +937,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
         draw() {
 
 
-            this.awarenessbody = new Circle(this.body.x, this.body.y, 45, "transparent")
-            this.awarenessbodysmall = new Circle(this.body.x, this.body.y, 45, "transparent")
+            this.awarenessbody = new Circle(this.body.x, this.body.y, 90, "transparent")
+            this.awarenessbodysmall = new Circle(this.body.x, this.body.y, 90, "transparent")
+            this.awarenessbodysmaller = new Circle(this.body.x, this.body.y, 45, "transparent")
 
             if (this.dead == 0) {
                 let avgposx = 0
@@ -949,17 +950,30 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 for (let t = 0; t < boids.length; t++) {
                     if (boids[t] != this) {
                         if (this.awarenessbody.isPointInside(boids[t].body)) {
-                            avgposx += boids[t].body.x
-                            avgposy += boids[t].body.y
-                            avgvecx += boids[t].body.xmom
-                            avgvecy += boids[t].body.ymom
-                            count++
+                            if(boids[t].box == this.box){
+                                avgposx += boids[t].body.x
+                                avgposy += boids[t].body.y
+                                avgvecx += boids[t].body.xmom
+                                avgvecy += boids[t].body.ymom
+                                count++
+                            }
                         }
                         let link = new LineOP(this.body, boids[t].body, this.body.color, .5)
                         if (this.awarenessbodysmall.isPointInside(boids[t].body)) {
-                            this.body.xmom += (this.body.x - boids[t].body.x) / this.sep
-                            this.body.ymom += (this.body.y - boids[t].body.y) / this.sep
+                            if(boids[t].body.color != this.body.color){
+                                this.body.xmom += (this.body.x - boids[t].body.x) / this.sep
+                                this.body.ymom += (this.body.y - boids[t].body.y) / this.sep
+                            }
 
+
+                        }
+                         if (this.awarenessbodysmaller.isPointInside(boids[t].body)) {
+                            if(boids[t].body.color == this.body.color){
+
+                                console.log("hio")
+                            this.body.xmom += (this.body.x - boids[t].body.x) / this.sepsame
+                            this.body.ymom += (this.body.y - boids[t].body.y) / this.sepsame
+                            }
 
                         }
                         // if(link.hypotenuse()<35){
@@ -971,15 +985,89 @@ window.addEventListener('DOMContentLoaded', (event) => {
                     if (walls[t].doesPerimeterTouch(this.body)) {
                         if (t == 0) {
                             if (!keysPressed['q']) {
-                                this.body.xmom *= -1.1
-                                this.body.ymom *= -1.1
+                                if(this.body.x > walls[t].x+(walls[t].width*.5)){
+                                    if(this.body.xmom < 0){
+                                        this.body.xmom *= -.99
+                                    }
+                                }else{ 
+                                     if(this.body.xmom > 0){
+                                        this.body.xmom *= -.99
+                                     }
+                                }
                                 this.body.move()
                             }
                         }
                         if (t == 1) {
                             if (!keysPressed['e']) {
-                                this.body.xmom *= -1.1
-                                this.body.ymom *= -1.1
+                                if(this.body.x > walls[t].x+(walls[t].width*.5)){
+                                    if(this.body.xmom < 0){
+                                        this.body.xmom *= -.99
+                                    }
+                                }else{ 
+                                     if(this.body.xmom > 0){
+                                        this.body.xmom *= -.99
+                                     }
+                                }
+                                this.body.move()
+                            }
+                        }
+                    }
+                    if (walls[t].doesPerimeterTouch(this.leftwing)) {
+                        if (t == 0) {
+                            if (!keysPressed['q']) {
+                                if(this.body.x > walls[t].x+(walls[t].width*.5)){
+                                    if(this.body.xmom < 0){
+                                        this.body.xmom *= -.99
+                                    }
+                                }else{ 
+                                     if(this.body.xmom > 0){
+                                        this.body.xmom *= -.99
+                                     }
+                                }
+                                this.body.move()
+                            }
+                        }
+                        if (t == 1) {
+                            if (!keysPressed['e']) {
+                                if(this.body.x > walls[t].x+(walls[t].width*.5)){
+                                    if(this.body.xmom < 0){
+                                        this.body.xmom *= -.99
+                                    }
+                                }else{ 
+                                     if(this.body.xmom > 0){
+                                        this.body.xmom *= -.99
+                                     }
+                                }
+                                this.body.move()
+                            }
+                        }
+                    }
+                    if (walls[t].doesPerimeterTouch(this.rightwing)) {
+                        if (t == 0) {
+                            if (!keysPressed['q']) {
+                                if(this.body.x > walls[t].x+(walls[t].width*.5)){
+                                    if(this.body.xmom < 0){
+                                        this.body.xmom *= -.99
+                                    }
+                                }else{ 
+                                     if(this.body.xmom > 0){
+                                        this.body.xmom *= -.99
+                                     }
+                                }
+                                this.body.move()
+                            }
+                        }
+                        if (t == 1) {
+                            if (!keysPressed['e']) {
+                                if(this.body.x > walls[t].x+(walls[t].width*.5)){
+                                    if(this.body.xmom < 0){
+                                        this.body.xmom *= -.99
+                                    }
+                                }else{ 
+                                     if(this.body.xmom > 0){
+                                        this.body.xmom *= -.99
+                                     }
+                                }
                                 this.body.move()
                             }
                         }
@@ -999,6 +1087,19 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
                 this.body.xmom += ((Math.random() - .5) * .0001)
                 this.body.ymom += ((Math.random() - .5) * .0001)
+
+                if(Math.abs(this.body.xmom)<1){
+                    this.body.xmom *=1.1
+                }
+                if(Math.abs(this.body.ymom)<1){
+                    this.body.ymom *=1.1
+                }
+                if(Math.abs(this.body.xmom)>4.9){
+                    this.body.xmom *=.9
+                }
+                if(Math.abs(this.body.ymom)>4.9){
+                    this.body.ymom *=.9
+                }
                 // if(Math.random()<.01){
                 //     this.dead=1
                 // }
@@ -1026,8 +1127,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
             this.rightwing.draw()
             this.flap++
             // if(this.flap > this.flapping){
-            this.angle2 += ((Math.abs(this.body.xmom) + Math.abs(this.body.ymom)) / 20) + .01
-            this.angle1 -= ((Math.abs(this.body.xmom) + Math.abs(this.body.ymom)) / 20) + .01
+            this.angle2 += (((Math.abs(this.body.xmom) + Math.abs(this.body.ymom)) / 20) + .01)*runspeed
+            this.angle1 -= (((Math.abs(this.body.xmom) + Math.abs(this.body.ymom)) / 20) + .01)*runspeed
 
             // }
         }
@@ -1058,6 +1159,18 @@ window.addEventListener('DOMContentLoaded', (event) => {
     let links = []
     let counter = 0
     function main() {
+        if(keysPressed['w']){
+            runspeed-=.01
+            if(runspeed<0){
+                runspeed = 0
+            }
+        }
+        if(keysPressed['s']){
+            runspeed+=.01
+            if(runspeed > 2){
+                runspeed = 2
+            }
+        }
         canvas_context.clearRect(0, 0, canvas.width, canvas.height)  // refreshes the image
         gamepadAPI.update() //checks for button presses/stick movement on the connected controller)
         links = []
@@ -1079,6 +1192,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
             boxes[t].union = []
             for(let k =0;k<boids.length;k++){
                 if(boxes[t].isPointInside(boids[k].body)){
+                    boids[k].box = boxes[t]
                     if(!boxes[t].union.includes(boids[k].body.color)){
                         boxes[t].union.push(boids[k].body.color)
                     }
